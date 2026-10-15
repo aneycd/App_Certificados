@@ -1,0 +1,20 @@
+/* Academia Horizonte: azul marino y dorado. */
+body { font-family: Arial, sans-serif; margin: 0; background: #f4f1e8; color: #1c2a3a; }
+header { background: #0f2a4a; color: #d4af37; padding: 20px; text-align: center; }
+header p { color: #fff; margin: 4px 0 0; }
+.contadores { display: flex; gap: 12px; justify-content: center; padding: 16px; }
+.caja { border-radius: 10px; padding: 12px 24px; text-align: center; color: #fff; min-width: 130px; }
+.caja strong { display: block; font-size: 28px; }
+.verde { background: #2e7d32; }
+.azul { background: #1565c0; }
+.rojo { background: #c62828; }
+.filtro { text-align: center; margin-bottom: 12px; }
+.filtro a { display: inline-block; margin: 4px; padding: 8px 14px; border: 2px solid #0f2a4a;
+  border-radius: 20px; color: #0f2a4a; text-decoration: none; }
+.filtro a.activo { background: #0f2a4a; color: #d4af37; }
+table { width: 95%; margin: 0 auto 20px; border-collapse: collapse; background: #fff; }
+th { background: #0f2a4a; color: #d4af37; padding: 10px; }
+td { border-bottom: 1px solid #ddd; padding: 8px; text-align: center; }
+.etiqueta { color: #fff; padding: 4px 12px; border-radius: 12px; }
+.inconsistencias { width: 95%; margin: 0 auto 30px; background: #fff;
+  border: 2px solid #d4af37; border-radius: 10px; padding: 12px 20px; }

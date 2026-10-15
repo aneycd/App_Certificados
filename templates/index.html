@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Academia Horizonte — Certificados</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <!-- EL SALÓN: solo muestra lo que la cocina (app.py) ya calculó. -->
+  <header>
+    <h1>Academia Horizonte</h1>
+    <p>Certificados por cohorte</p>
+  </header>
+
+  <!-- Contadores arriba -->
+  <section class="contadores">
+    <div class="caja verde"><strong>{{ n_aprob }}</strong><span>Aprobación</span></div>
+    <div class="caja azul"><strong>{{ n_part }}</strong><span>Participación</span></div>
+    <div class="caja rojo"><strong>{{ n_sin }}</strong><span>Sin certificado</span></div>
+  </section>
+
+  <!-- Filtro por programa (los dos del maestro) -->
+  <nav class="filtro">
+    <a href="/?programa=Todos" class="{{ 'activo' if filtro == 'Todos' else '' }}">Todos</a>
+    {% for p in programas %}
+      <a href="/?programa={{ p }}" class="{{ 'activo' if filtro == p else '' }}">{{ p }}</a>
+    {% endfor %}
+  </nav>
+
+  <!-- Tabla de resultados -->
+  <table>
+    <thead>
+      <tr><th>Nombre</th><th>Programa</th><th>Módulos</th><th>Promedio</th><th>Asistencia</th><th>Certificado</th></tr>
+    </thead>
+    <tbody>
+      {% for r in resultados %}
+      <tr>
+        <td>{{ r.nombre }}<br><small>{{ r.id }}</small></td>
+        <td>{{ r.programa }}</td>
+        <td>{{ r.modulos }}</td>
+        <td>{{ "%.2f"|format(r.promedio) }}</td>
+        <td>{{ "%.2f"|format(r.asistencia) }}</td>
+        <td><span class="etiqueta {{ 'verde' if r.tipo == 'Aprobación' else ('azul' if r.tipo == 'Participación' else 'rojo') }}">{{ r.tipo }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Inconsistencias aparte -->
+  <section class="inconsistencias">
+    <h2>Inconsistencias</h2>
+    <h3>1. Maestro SIN evaluación ({{ sin_eval|length }})</h3>
+    <ul>{% for e in sin_eval %}<li>{{ e.nombre }} — {{ e.id }} ({{ e.programa }})</li>{% endfor %}</ul>
+    <h3>2. Evaluación SIN maestro — no genera certificado ({{ huerfanos|length }})</h3>
+    <ul>{% for e in huerfanos %}<li>{{ e.id }} ({{ e.programa }})</li>{% endfor %}</ul>
+    <h3>3. Con ceros, posible abandono ({{ con_ceros|length }})</h3>
+    <ul>{% for e in con_ceros %}<li>{{ e.nombre }} — {{ e.id }} ({{ e.programa }})</li>{% endfor %}</ul>
+  </section>
+</body>
+</html>
