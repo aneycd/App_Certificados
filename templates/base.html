@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Academia Horizonte{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="{% block cuerpo %}{% endblock %}">
+  <!-- EL SALÓN: solo muestra lo que la cocina (app.py) ya calculó. -->
+  <header class="cabecera">
+    <a href="{{ url_for('index') }}">
+      <h1>Academia Horizonte</h1>
+      <p>Certificados por cohorte</p>
+    </a>
+  </header>
+
+  <main>
+    {% block contenido %}{% endblock %}
+  </main>
+
+  <footer class="pie-pagina">
+    Academia Horizonte · Certificados por cohorte
+  </footer>
+</body>
+</html>

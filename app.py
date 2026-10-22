@@ -3,6 +3,7 @@
 # Para arrancar con doble clic usa iniciar_app.bat. Para detener: Ctrl+C.
 
 from collections import defaultdict  # LADRILLO: caja para agrupar por clave
+from datetime import date  # LADRILLO: fecha de emisión del certificado
 from pathlib import Path  # LADRILLO: rutas que funcionan desde cualquier carpeta
 from flask import Flask, render_template, request  # LADRILLO: Flask = servidor web
 from openpyxl import load_workbook  # LADRILLO: librería para leer Excel .xlsx
@@ -14,6 +15,30 @@ app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 RUTA_MAESTRO = BASE_DIR / "INSUMOS" / "Maestro_Estudiantes.xlsx"
 RUTA_EVAL = BASE_DIR / "INSUMOS" / "Registro_Evaluaciones.xlsx"
+
+# LADRILLO variable tipo dict: sigla de cada programa para armar el folio.
+SIGLAS_PROGRAMA = {
+    "Técnico en IA Aplicada": "IA",
+    "Tecnico en IA Aplicada": "IA",  # variante sin tilde, por si cambia el Excel
+    "Excel Avanzado para Negocios": "EXC",
+}
+
+# LADRILLO variable tipo dict: meses en español para escribir la fecha.
+MESES = {
+    1: "enero", 2: "febrero", 3: "marzo", 4: "abril", 5: "mayo", 6: "junio",
+    7: "julio", 8: "agosto", 9: "setiembre", 10: "octubre", 11: "noviembre",
+    12: "diciembre",
+}
+
+# LADRILLO variable tipo dict: título y texto según el tipo de certificado.
+TITULOS_CERTIFICADO = {
+    "Aprobación": "Certificado de Aprobación",
+    "Participación": "Certificado de Participación",
+}
+TEXTOS_CERTIFICADO = {
+    "Aprobación": "por haber completado y aprobado satisfactoriamente el programa",
+    "Participación": "por su participación y cumplimiento de asistencia en el programa",
+}
 
 
 # LADRILLO función: calcula un promedio (suma / cantidad).
@@ -34,6 +59,20 @@ def decidir_certificado(promedio, asistencia):
     if promedio >= 70:
         return "Aprobación"
     return "Participación"
+
+
+# LADRILLO función: escribe una fecha en español sencillo (ej. 21 de octubre de 2026).
+def formatear_fecha(dia):
+    # LADRILLO variable: día (date) -> texto.
+    return f"{dia.day} de {MESES[dia.month]} de {dia.year}"
+
+
+# LADRILLO función: arma el folio único de cada certificado.
+def codigo_certificado(cohorte, programa, identificacion):
+    # LADRILLO variables: cohorte (texto), programa (texto), id (texto) -> folio.
+    sigla = SIGLAS_PROGRAMA.get(programa, "GEN")  # LADRILLO .get evita error
+    cohorte_texto = cohorte if cohorte else "SIN-COHORTE"
+    return f"AH-{cohorte_texto}-{sigla}-{identificacion}"
 
 
 def cargar_maestro(ruta):
@@ -80,9 +119,11 @@ def calcular_resultados():
         tipo = decidir_certificado(promedio, asistencia)  # LADRILLO función
         resultados.append({
             "id": clave[0], "programa": clave[1], "nombre": datos["nombre"],
+            "correo": datos["correo"], "cohorte": datos["cohorte"],
             "modulos": len(notas[clave]),
             "promedio": round(promedio, 2), "asistencia": round(asistencia, 2),
             "tipo": tipo,
+            "folio": codigo_certificado(datos["cohorte"], clave[1], clave[0]),
         })
     # Orden: programa y luego nombre.
     resultados.sort(key=lambda r: (r["programa"], r["nombre"]))
@@ -112,6 +153,17 @@ def calcular_resultados():
     return resultados, n_aprob, n_part, n_sin, sin_eval, huerfanos, con_ceros, programas
 
 
+# LADRILLO función: busca un solo estudiante por (identificación, programa).
+def buscar_resultado(identificacion, programa):
+    # LADRILLO variable: resultados es lista de dicts ya calculados.
+    resultados, *_ = calcular_resultados()
+    # LADRILLO bucle + condicional: compara como texto para no fallar con ceros.
+    for r in resultados:
+        if r["id"] == str(identificacion) and r["programa"] == programa:
+            return r
+    return None  # LADRILLO: si no existe, devolvemos None
+
+
 # LADRILLO función con decorador: atiende la página principal.
 @app.route("/")
 def index():
@@ -124,8 +176,71 @@ def index():
     return render_template(
         "index.html", resultados=resultados,
         n_aprob=n_aprob, n_part=n_part, n_sin=n_sin,
+        n_certificados=n_aprob + n_part,
         sin_eval=sin_eval, huerfanos=huerfanos, con_ceros=con_ceros,
         programas=programas, filtro=filtro,
+    )
+
+
+# LADRILLO función: muestra el detalle académico de un estudiante.
+@app.route("/estudiante/<identificacion>/<path:programa>")
+def estudiante(identificacion, programa):
+    resultado = buscar_resultado(identificacion, programa)
+    # LADRILLO condicional: si no existe, mensaje amable (no se cae la app).
+    if resultado is None:
+        return render_template(
+            "mensaje.html",
+            titulo="Estudiante no encontrado",
+            mensaje=("No hay datos para la identificación "
+                     f"{identificacion} en el programa {programa}."),
+        ), 404
+    return render_template("estudiante.html", r=resultado)
+
+
+# LADRILLO función: emite el certificado solo si la regla lo permite.
+@app.route("/certificado/<identificacion>/<path:programa>")
+def certificado(identificacion, programa):
+    resultado = buscar_resultado(identificacion, programa)
+    if resultado is None:
+        return render_template(
+            "mensaje.html",
+            titulo="Estudiante no encontrado",
+            mensaje=("No hay datos para la identificación "
+                     f"{identificacion} en el programa {programa}."),
+        ), 404
+    # LADRILLO condicional: asistencia < 80 no genera certificado.
+    if resultado["tipo"] == "Sin certificado":
+        return render_template(
+            "mensaje.html",
+            titulo="Sin certificado",
+            mensaje=(f"{resultado['nombre']} no cumple los requisitos "
+                     f"(asistencia {resultado['asistencia']:.2f}%, "
+                     "mínimo 80%)."),
+        ), 403
+    # LADRILLO: título y texto ya vienen decididos desde Python.
+    return render_template(
+        "certificado.html", r=resultado,
+        titulo=resultado["tipo"],
+        titulo_certificado=TITULOS_CERTIFICADO[resultado["tipo"]],
+        texto_certificado=TEXTOS_CERTIFICADO[resultado["tipo"]],
+        fecha_emision=formatear_fecha(date.today()),
+    )
+
+
+# LADRILLO función: junta TODOS los certificados en una sola página imprimible.
+@app.route("/certificados")
+def certificados():
+    resultados, *_ = calcular_resultados()
+    # LADRILLO bucle + condicional: solo quien tiene certificado entra al lote.
+    aptos = [
+        dict(r,
+             titulo_certificado=TITULOS_CERTIFICADO[r["tipo"]],
+             texto_certificado=TEXTOS_CERTIFICADO[r["tipo"]])
+        for r in resultados if r["tipo"] != "Sin certificado"
+    ]
+    return render_template(
+        "certificados.html", certificados=aptos,
+        fecha_emision=formatear_fecha(date.today()),
     )
 
 

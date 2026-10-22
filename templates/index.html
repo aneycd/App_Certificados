@@ -1,17 +1,7 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <title>Academia Horizonte — Certificados</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <!-- EL SALÓN: solo muestra lo que la cocina (app.py) ya calculó. -->
-  <header>
-    <h1>Academia Horizonte</h1>
-    <p>Certificados por cohorte</p>
-  </header>
+{% extends "base.html" %}
+{% block titulo %}Academia Horizonte — Certificados{% endblock %}
 
+{% block contenido %}
   <!-- Contadores arriba -->
   <section class="contadores">
     <div class="caja verde"><strong>{{ n_aprob }}</strong><span>Aprobación</span></div>
@@ -19,18 +9,23 @@
     <div class="caja rojo"><strong>{{ n_sin }}</strong><span>Sin certificado</span></div>
   </section>
 
+  <!-- Atajo para emitir todos los certificados juntos -->
+  <section class="barra-acciones">
+    <a class="boton dorado" href="{{ url_for('certificados') }}">Ver los {{ n_certificados }} certificados</a>
+  </section>
+
   <!-- Filtro por programa (los dos del maestro) -->
   <nav class="filtro">
-    <a href="/?programa=Todos" class="{{ 'activo' if filtro == 'Todos' else '' }}">Todos</a>
+    <a href="{{ url_for('index', programa='Todos') }}" class="{{ 'activo' if filtro == 'Todos' else '' }}">Todos</a>
     {% for p in programas %}
-      <a href="/?programa={{ p }}" class="{{ 'activo' if filtro == p else '' }}">{{ p }}</a>
+      <a href="{{ url_for('index', programa=p) }}" class="{{ 'activo' if filtro == p else '' }}">{{ p }}</a>
     {% endfor %}
   </nav>
 
   <!-- Tabla de resultados -->
   <table>
     <thead>
-      <tr><th>Nombre</th><th>Programa</th><th>Módulos</th><th>Promedio</th><th>Asistencia</th><th>Certificado</th></tr>
+      <tr><th>Nombre</th><th>Programa</th><th>Módulos</th><th>Promedio</th><th>Asistencia</th><th>Certificado</th><th>Acciones</th></tr>
     </thead>
     <tbody>
       {% for r in resultados %}
@@ -41,6 +36,12 @@
         <td>{{ "%.2f"|format(r.promedio) }}</td>
         <td>{{ "%.2f"|format(r.asistencia) }}</td>
         <td><span class="etiqueta {{ 'verde' if r.tipo == 'Aprobación' else ('azul' if r.tipo == 'Participación' else 'rojo') }}">{{ r.tipo }}</span></td>
+        <td class="acciones">
+          <a class="boton pequeno" href="{{ url_for('estudiante', identificacion=r.id, programa=r.programa) }}">Detalle</a>
+          {% if r.tipo != 'Sin certificado' %}
+            <a class="boton dorado pequeno" href="{{ url_for('certificado', identificacion=r.id, programa=r.programa) }}">Ver certificado</a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -56,5 +57,4 @@
     <h3>3. Con ceros, posible abandono ({{ con_ceros|length }})</h3>
     <ul>{% for e in con_ceros %}<li>{{ e.nombre }} — {{ e.id }} ({{ e.programa }})</li>{% endfor %}</ul>
   </section>
-</body>
-</html>
+{% endblock %}

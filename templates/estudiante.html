@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}{{ r.nombre }} — Academia Horizonte{% endblock %}
+
+{% block contenido %}
+  <p class="volver"><a href="{{ url_for('index') }}">← Volver a la tabla</a></p>
+
+  <section class="ficha">
+    <h2>{{ r.nombre }}</h2>
+    <p class="subtitulo">Identificación {{ r.id }} · {{ r.programa }}</p>
+
+    <div class="datos">
+      <div><span>Cohorte</span><strong>{{ r.cohorte }}</strong></div>
+      <div><span>Módulos cursados</span><strong>{{ r.modulos }}</strong></div>
+      <div><span>Promedio</span><strong>{{ "%.2f"|format(r.promedio) }}</strong></div>
+      <div><span>Asistencia</span><strong>{{ "%.2f"|format(r.asistencia) }} %</strong></div>
+      <div><span>Correo</span><strong>{{ r.correo }}</strong></div>
+      <div>
+        <span>Resultado</span>
+        <strong class="etiqueta {{ 'verde' if r.tipo == 'Aprobación' else ('azul' if r.tipo == 'Participación' else 'rojo') }}">{{ r.tipo }}</strong>
+      </div>
+    </div>
+
+    <!-- Texto fijo: la regla vive en AGENTS.md y en app.py, no se calcula aquí. -->
+    <p class="regla">
+      Regla aplicada: aprobación con promedio ≥ 70 y asistencia ≥ 80;
+      participación con promedio &lt; 70 y asistencia ≥ 80;
+      sin certificado si la asistencia es menor a 80.
+    </p>
+
+    <div class="botones">
+      {% if r.tipo != 'Sin certificado' %}
+        <a class="boton dorado" href="{{ url_for('certificado', identificacion=r.id, programa=r.programa) }}">Ver certificado</a>
+      {% endif %}
+      <a class="boton" href="{{ url_for('index') }}">Volver a la tabla</a>
+    </div>
+  </section>
+{% endblock %}

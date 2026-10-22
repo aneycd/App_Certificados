@@ -1,0 +1,29 @@
+<!-- LADRILLO: una sola plantilla de certificado, reutilizada individual y en lote. -->
+<section class="certificado">
+  <div class="marco">
+    <p class="institucion">ACADEMIA HORIZONTE</p>
+    <p class="lema">Formación continua para el futuro</p>
+
+    <h2 class="titulo">{{ titulo_certificado }}</h2>
+    <p class="otorga">Se otorga el presente certificado a</p>
+    <p class="nombre">{{ r.nombre }}</p>
+    <p class="identificacion">Identificación {{ r.id }}</p>
+
+    <p class="texto">{{ texto_certificado }}</p>
+    <p class="programa">{{ r.programa }}</p>
+
+    <p class="metricas">
+      Promedio {{ "%.2f"|format(r.promedio) }} ·
+      Asistencia {{ "%.2f"|format(r.asistencia) }} % ·
+      {{ r.modulos }} módulos cursados · Cohorte {{ r.cohorte }}
+    </p>
+
+    <div class="firmas">
+      <div class="firma"><span class="linea"></span><p>Dirección Académica</p></div>
+      <div class="sello">AH</div>
+      <div class="firma"><span class="linea"></span><p>Coordinación de Programa</p></div>
+    </div>
+
+    <p class="folio">Folio {{ r.folio }} · Emitido el {{ fecha_emision }}</p>
+  </div>
+</section>

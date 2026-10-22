@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo_certificado }} — {{ r.nombre }}{% endblock %}
+{% block cuerpo %}cuerpo-certificado{% endblock %}
+
+{% block contenido %}
+  <p class="volver no-imprimir"><a href="{{ url_for('index') }}">← Volver a la tabla</a></p>
+
+  {% include "_certificado.html" %}
+
+  <div class="acciones-impresion no-imprimir">
+    <button class="boton dorado" type="button" onclick="window.print()">Imprimir / Guardar como PDF</button>
+    <a class="boton" href="{{ url_for('estudiante', identificacion=r.id, programa=r.programa) }}">Ver detalle</a>
+  </div>
+{% endblock %}

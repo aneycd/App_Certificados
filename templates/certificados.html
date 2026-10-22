@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titulo %}Todos los certificados — Academia Horizonte{% endblock %}
+
+{% block contenido %}
+  <p class="volver no-imprimir"><a href="{{ url_for('index') }}">← Volver a la tabla</a></p>
+
+  <section class="lote-encabezado no-imprimir">
+    <h2>{{ certificados|length }} certificados listos</h2>
+    <p>Cada certificado ocupa una hoja horizontal. Usa el botón para imprimir o guardar todo en un solo PDF.</p>
+    <button class="boton dorado" type="button" onclick="window.print()">Imprimir / Guardar todos como PDF</button>
+  </section>
+
+  <!-- LADRILLO bucle: repite el certificado por cada estudiante apto. -->
+  <div class="lote">
+    {% for c in certificados %}
+      {% with r=c, titulo_certificado=c.titulo_certificado, texto_certificado=c.texto_certificado %}
+        {% include "_certificado.html" %}
+      {% endwith %}
+    {% endfor %}
+  </div>
+{% endblock %}

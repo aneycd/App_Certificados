@@ -1,20 +1,166 @@
 /* Academia Horizonte: azul marino y dorado. */
-body { font-family: Arial, sans-serif; margin: 0; background: #f4f1e8; color: #1c2a3a; }
-header { background: #0f2a4a; color: #d4af37; padding: 20px; text-align: center; }
-header p { color: #fff; margin: 4px 0 0; }
-.contadores { display: flex; gap: 12px; justify-content: center; padding: 16px; }
+* { box-sizing: border-box; }
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: #f4f1e8;
+  color: #1c2a3a;
+}
+
+/* LADRILLO: cabecera y pie comunes a todas las páginas. */
+.cabecera { background: #0f2a4a; padding: 18px; text-align: center; }
+.cabecera a { text-decoration: none; }
+.cabecera h1 { margin: 0; color: #d4af37; font-size: 28px; letter-spacing: 1px; }
+.cabecera p { color: #fff; margin: 4px 0 0; }
+
+main { padding-bottom: 20px; }
+
+.pie-pagina {
+  margin-top: 30px; padding: 14px; text-align: center;
+  background: #0f2a4a; color: #d4af37; font-size: 13px;
+}
+
+/* Contadores */
+.contadores { display: flex; gap: 12px; justify-content: center; padding: 16px; flex-wrap: wrap; }
 .caja { border-radius: 10px; padding: 12px 24px; text-align: center; color: #fff; min-width: 130px; }
 .caja strong { display: block; font-size: 28px; }
 .verde { background: #2e7d32; }
 .azul { background: #1565c0; }
 .rojo { background: #c62828; }
+
+/* Filtro */
 .filtro { text-align: center; margin-bottom: 12px; }
-.filtro a { display: inline-block; margin: 4px; padding: 8px 14px; border: 2px solid #0f2a4a;
-  border-radius: 20px; color: #0f2a4a; text-decoration: none; }
+.filtro a {
+  display: inline-block; margin: 4px; padding: 8px 14px;
+  border: 2px solid #0f2a4a; border-radius: 20px;
+  color: #0f2a4a; text-decoration: none;
+}
 .filtro a.activo { background: #0f2a4a; color: #d4af37; }
+
+/* Tabla */
 table { width: 95%; margin: 0 auto 20px; border-collapse: collapse; background: #fff; }
 th { background: #0f2a4a; color: #d4af37; padding: 10px; }
 td { border-bottom: 1px solid #ddd; padding: 8px; text-align: center; }
-.etiqueta { color: #fff; padding: 4px 12px; border-radius: 12px; }
-.inconsistencias { width: 95%; margin: 0 auto 30px; background: #fff;
-  border: 2px solid #d4af37; border-radius: 10px; padding: 12px 20px; }
+.etiqueta {
+  display: inline-block; color: #fff; padding: 4px 12px; border-radius: 12px;
+  font-size: 13px; font-weight: bold;
+}
+.acciones { min-width: 200px; }
+.acciones .boton { margin: 2px; }
+
+/* Botones */
+.boton {
+  display: inline-block; padding: 10px 18px; border: 2px solid #0f2a4a;
+  border-radius: 8px; background: #fff; color: #0f2a4a;
+  font-size: 14px; font-weight: bold; text-decoration: none; cursor: pointer;
+}
+.boton:hover { background: #0f2a4a; color: #d4af37; }
+.boton.pequeno { padding: 6px 12px; font-size: 12px; }
+.boton.dorado { background: #d4af37; border-color: #b8912b; color: #0f2a4a; }
+.boton.dorado:hover { background: #b8912b; color: #fff; }
+
+.volver { margin: 16px 0 0 3%; }
+.volver a { color: #0f2a4a; }
+
+/* Inconsistencias */
+.inconsistencias {
+  width: 95%; margin: 0 auto 30px; background: #fff;
+  border: 2px solid #d4af37; border-radius: 10px; padding: 12px 20px;
+}
+.inconsistencias h2 { color: #0f2a4a; margin-top: 4px; }
+.inconsistencias h3 { font-size: 15px; margin-bottom: 4px; }
+
+/* Ficha del estudiante */
+.ficha {
+  width: 90%; max-width: 820px; margin: 20px auto; padding: 24px 28px;
+  background: #fff; border: 2px solid #d4af37; border-radius: 12px;
+}
+.ficha h2 { margin: 0; color: #0f2a4a; }
+.ficha .subtitulo { margin: 4px 0 18px; color: #555; }
+.datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.datos div { background: #f4f1e8; border-radius: 8px; padding: 10px 14px; }
+.datos span { display: block; font-size: 12px; text-transform: uppercase; color: #6b6b6b; letter-spacing: .5px; }
+.datos strong { font-size: 18px; color: #0f2a4a; overflow-wrap: anywhere; }
+.datos strong.etiqueta { color: #fff; font-size: 14px; }
+.regla {
+  margin-top: 18px; padding: 12px 14px; font-size: 13px;
+  background: #fff8e1; border-left: 5px solid #d4af37; border-radius: 4px;
+}
+.botones { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Certificado imprimible (horizontal) */
+.certificado {
+  max-width: 1000px; margin: 16px auto; padding: 10px;
+  background: #fff; box-shadow: 0 6px 18px rgba(15, 42, 74, .25);
+}
+.marco {
+  border: 10px solid #0f2a4a;
+  outline: 3px solid #d4af37; outline-offset: -7px;
+  padding: 30px 44px 22px; text-align: center;
+}
+.institucion { margin: 0; font-size: 22px; letter-spacing: 4px; color: #0f2a4a; font-weight: bold; }
+.lema { margin: 2px 0 14px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #b8912b; }
+.marco .titulo {
+  margin: 0 0 10px; font-size: 30px; color: #0f2a4a; text-transform: uppercase;
+  letter-spacing: 2px; border-bottom: 2px solid #d4af37; padding-bottom: 8px;
+}
+.otorga { margin: 10px 0 0; font-size: 14px; color: #444; }
+.nombre {
+  margin: 6px 0 2px; font-family: Georgia, "Times New Roman", serif;
+  font-size: 36px; color: #0f2a4a;
+}
+.identificacion { margin: 0 0 14px; font-size: 12px; color: #666; }
+.texto { margin: 10px auto 4px; font-size: 15px; max-width: 720px; }
+.programa {
+  margin: 6px 0 14px; font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px; color: #b8912b; font-weight: bold;
+}
+.metricas { margin: 0 0 16px; font-size: 12px; color: #444; }
+.firmas { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.firma { flex: 1; }
+.firma .linea { display: block; border-top: 1px solid #0f2a4a; margin: 0 12px 4px; }
+.firma p { margin: 0; font-size: 12px; color: #0f2a4a; }
+.sello {
+  width: 64px; height: 64px; border-radius: 50%; flex: 0 0 64px;
+  border: 3px solid #d4af37; color: #0f2a4a; background: #fff8e1;
+  font-weight: bold; font-size: 20px; line-height: 58px; text-align: center;
+}
+.folio { margin: 14px 0 0; font-size: 10px; color: #777; letter-spacing: .5px; }
+.acciones-impresion { max-width: 1000px; margin: 0 auto 30px; display: flex; gap: 10px; justify-content: center; }
+
+/* Lote: todos los certificados seguidos, uno por hoja al imprimir. */
+.barra-acciones { text-align: center; margin-bottom: 14px; }
+.lote-encabezado {
+  max-width: 1000px; margin: 16px auto; padding: 16px 20px; text-align: center;
+  background: #fff; border: 2px solid #d4af37; border-radius: 12px;
+}
+.lote-encabezado h2 { margin: 0 0 6px; color: #0f2a4a; }
+.lote-encabezado p { margin: 0 0 12px; font-size: 14px; }
+.lote .certificado { page-break-after: always; break-after: page; }
+.lote .certificado:last-child { page-break-after: auto; break-after: auto; }
+
+/* Mensaje amable */
+.mensaje {
+  width: 90%; max-width: 640px; margin: 40px auto; padding: 24px 28px;
+  background: #fff; border: 2px solid #d4af37; border-radius: 12px; text-align: center;
+}
+.mensaje h2 { margin-top: 0; color: #0f2a4a; }
+
+/* LADRILLO: impresión en hoja horizontal, sin cabecera ni botones. */
+@page { size: A4 landscape; margin: 8mm; }
+
+@media print {
+  body { background: #fff; }
+  .cabecera, .pie-pagina, .no-imprimir { display: none !important; }
+  .certificado {
+    max-width: none; width: 100%; margin: 0; padding: 0;
+    box-shadow: none;
+  }
+  .marco { padding: 6mm 10mm 4mm; }
+  .marco .titulo { font-size: 24px; }
+  .nombre { font-size: 30px; }
+  .programa { font-size: 20px; }
+  .texto { font-size: 13px; }
+  .institucion { font-size: 18px; }
+}

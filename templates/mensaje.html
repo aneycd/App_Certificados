@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }} — Academia Horizonte{% endblock %}
+
+{% block contenido %}
+  <section class="mensaje">
+    <h2>{{ titulo }}</h2>
+    <p>{{ mensaje }}</p>
+    <a class="boton" href="{{ url_for('index') }}">Volver a la tabla</a>
+  </section>
+{% endblock %}
