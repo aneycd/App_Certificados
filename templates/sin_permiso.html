@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titulo %}Sin permiso — Academia Horizonte{% endblock %}
+
+{% block contenido %}
+  <!-- LADRILLO: página amable para quien no tiene rol de administrador. -->
+  <section class="mensaje">
+    <h2>Esta sección es solo para administradores</h2>
+    <p>
+      Tu sesión está abierta como <strong>{{ session.get('correo', 'sin sesión') }}</strong>
+      con rol <strong>{{ session.get('rol', 'sin rol') }}</strong>.
+    </p>
+    <p>
+      Si necesitas entrar a esta parte, pídele a la persona administradora
+      que te habilite el acceso.
+    </p>
+    <div class="botones">
+      <a class="boton" href="{{ url_for('index') }}">Volver al tablero</a>
+      <a class="boton dorado" href="{{ url_for('salir') }}">Salir</a>
+    </div>
+  </section>
+{% endblock %}

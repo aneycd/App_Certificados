@@ -13,6 +13,15 @@
       <h1>Academia Horizonte</h1>
       <p>Certificados por cohorte</p>
     </a>
+
+    <!-- LADRILLO condicional: solo si hay sesión mostramos correo, rol y salida. -->
+    {% if session.get('correo') %}
+      <div class="sesion">
+        <span class="correo">{{ session['correo'] }}</span>
+        <span class="rol rol-{{ session['rol'] }}">{{ session['rol'] }}</span>
+        <a class="boton pequeno dorado" href="{{ url_for('salir') }}">Salir</a>
+      </div>
+    {% endif %}
   </header>
 
   <main>

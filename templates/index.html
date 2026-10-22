@@ -9,10 +9,12 @@
     <div class="caja rojo"><strong>{{ n_sin }}</strong><span>Sin certificado</span></div>
   </section>
 
-  <!-- Atajo para emitir todos los certificados juntos -->
-  <section class="barra-acciones">
-    <a class="boton dorado" href="{{ url_for('certificados') }}">Ver los {{ n_certificados }} certificados</a>
-  </section>
+  <!-- Atajo solo para admin: emitir todos los certificados juntos -->
+  {% if session.get('rol') == 'admin' %}
+    <section class="barra-acciones">
+      <a class="boton dorado" href="{{ url_for('certificados') }}">Ver los {{ n_certificados }} certificados</a>
+    </section>
+  {% endif %}
 
   <!-- Filtro por programa (los dos del maestro) -->
   <nav class="filtro">
@@ -47,7 +49,8 @@
     </tbody>
   </table>
 
-  <!-- Inconsistencias aparte -->
+  <!-- Inconsistencias aparte: solo el administrador ve esta sección. -->
+  {% if session.get('rol') == 'admin' %}
   <section class="inconsistencias">
     <h2>Inconsistencias</h2>
     <h3>1. Maestro SIN evaluación ({{ sin_eval|length }})</h3>
@@ -57,4 +60,5 @@
     <h3>3. Con ceros, posible abandono ({{ con_ceros|length }})</h3>
     <ul>{% for e in con_ceros %}<li>{{ e.nombre }} — {{ e.id }} ({{ e.programa }})</li>{% endfor %}</ul>
   </section>
+  {% endif %}
 {% endblock %}

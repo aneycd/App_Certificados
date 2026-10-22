@@ -4,8 +4,14 @@
 
 from collections import defaultdict  # LADRILLO: caja para agrupar por clave
 from datetime import date  # LADRILLO: fecha de emisión del certificado
+from functools import wraps  # LADRILLO: conservar el nombre de la función decorada
+import hmac  # LADRILLO: comparar contraseñas de forma segura
+import os  # LADRILLO: leer variables de entorno (nunca claves en el código)
 from pathlib import Path  # LADRILLO: rutas que funcionan desde cualquier carpeta
-from flask import Flask, render_template, request  # LADRILLO: Flask = servidor web
+from dotenv import load_dotenv  # LADRILLO: leer el archivo .env en tu máquina
+from flask import (  # LADRILLO: Flask = servidor web
+    Flask, redirect, render_template, request, session, url_for,
+)
 from openpyxl import load_workbook  # LADRILLO: librería para leer Excel .xlsx
 
 # LADRILLO variable: creamos la aplicación web.
@@ -15,6 +21,14 @@ app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 RUTA_MAESTRO = BASE_DIR / "INSUMOS" / "Maestro_Estudiantes.xlsx"
 RUTA_EVAL = BASE_DIR / "INSUMOS" / "Registro_Evaluaciones.xlsx"
+
+# LADRILLO: carga el archivo .env de esta carpeta (si no existe, no pasa nada).
+load_dotenv(BASE_DIR / ".env")
+
+# LADRILLO variable: clave para firmar la cookie de sesión.
+# En producción debe venir de una variable de entorno (SECRET_KEY).
+app.secret_key = os.environ.get("SECRET_KEY", "clave-solo-para-demostracion")
+
 
 # LADRILLO variable tipo dict: sigla de cada programa para armar el folio.
 SIGLAS_PROGRAMA = {
@@ -39,6 +53,58 @@ TEXTOS_CERTIFICADO = {
     "Aprobación": "por haber completado y aprobado satisfactoriamente el programa",
     "Participación": "por su participación y cumplimiento de asistencia en el programa",
 }
+
+# LADRILLO variable tipo dict: usuarios de prueba si faltan las variables de entorno.
+USUARIOS_DEMO = {
+    "admin": {"correo": "admin@horizonte.cr", "clave": "admin1234"},
+    "usuario": {"correo": "usuario@horizonte.cr", "clave": "usuario1234"},
+}
+
+
+# LADRILLO función: lee los dos usuarios desde el entorno (o usa los de prueba).
+def cargar_usuarios():
+    """Devuelve el diccionario de usuarios, si está en modo demo y los avisos."""
+    usuarios = {}
+    demo_visibles = []
+    # LADRILLO bucle: un prefijo de variables por cada usuario permitido.
+    for prefijo, rol in (("ADMIN", "admin"), ("USUARIO", "usuario")):
+        correo = os.environ.get(f"{prefijo}_CORREO")
+        clave = os.environ.get(f"{prefijo}_CLAVE")
+        # LADRILLO condicional: si falta una variable, entramos en modo demostración.
+        if not correo or not clave:
+            demo = USUARIOS_DEMO[rol]
+            correo, clave = demo["correo"], demo["clave"]
+            demo_visibles.append({"correo": correo, "clave": clave, "rol": rol})
+        # LADRILLO variable: el correo se guarda en minúsculas para comparar fácil.
+        usuarios[correo.strip().lower()] = {"clave": clave, "rol": rol}
+    return usuarios, bool(demo_visibles), demo_visibles
+
+
+# LADRILLO variables: usuarios disponibles y aviso de modo demostración.
+USUARIOS, MODO_DEMO, USUARIOS_DEMO_VISIBLES = cargar_usuarios()
+
+
+# LADRILLO función decoradora: exige sesión iniciada antes de mostrar datos.
+def requiere_login(vista):
+    @wraps(vista)
+    def envoltura(*args, **kwargs):
+        # LADRILLO condicional: si no hay correo en la sesión, va a /login.
+        if "correo" not in session:
+            return redirect(url_for("login"))
+        return vista(*args, **kwargs)
+    return envoltura
+
+
+# LADRILLO función decoradora: solo deja pasar al rol "admin".
+def solo_admin(vista):
+    @wraps(vista)
+    def envoltura(*args, **kwargs):
+        # LADRILLO condicional: cualquier rol distinto de admin recibe 403.
+        if session.get("rol") != "admin":
+            return render_template("sin_permiso.html"), 403
+        return vista(*args, **kwargs)
+    return envoltura
+
 
 
 # LADRILLO función: calcula un promedio (suma / cantidad).
@@ -164,8 +230,43 @@ def buscar_resultado(identificacion, programa):
     return None  # LADRILLO: si no existe, devolvemos None
 
 
+# LADRILLO función con decorador: pantalla de entrada (GET muestra, POST valida).
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    # LADRILLO condicional: si ya hay sesión, no volvemos a pedir la contraseña.
+    if session.get("correo"):
+        return redirect(url_for("index"))
+
+    error = None
+    correo = ""
+    if request.method == "POST":  # LADRILLO condicional: llegó el formulario
+        correo = request.form.get("correo", "").strip().lower()
+        clave = request.form.get("clave", "")
+        datos = USUARIOS.get(correo)
+        # LADRILLO condicional + hmac: compara la clave sin filtrar información.
+        if datos and hmac.compare_digest(datos["clave"], clave):
+            session.clear()  # LADRILLO: empezamos una sesión nueva y limpia
+            session["correo"] = correo
+            session["rol"] = datos["rol"]
+            return redirect(url_for("index"))
+        error = "Correo o contraseña incorrectos."
+
+    return render_template(
+        "login.html", error=error, correo=correo,
+        modo_demo=MODO_DEMO, demo_visibles=USUARIOS_DEMO_VISIBLES,
+    )
+
+
+# LADRILLO función con decorador: cierra la sesión y vuelve a la entrada.
+@app.route("/salir")
+def salir():
+    session.clear()  # LADRILLO: borra correo, rol y cualquier dato guardado
+    return redirect(url_for("login"))
+
+
 # LADRILLO función con decorador: atiende la página principal.
 @app.route("/")
+@requiere_login
 def index():
     resultados, n_aprob, n_part, n_sin, sin_eval, huerfanos, con_ceros, programas = \
         calcular_resultados()
@@ -184,6 +285,7 @@ def index():
 
 # LADRILLO función: muestra el detalle académico de un estudiante.
 @app.route("/estudiante/<identificacion>/<path:programa>")
+@requiere_login
 def estudiante(identificacion, programa):
     resultado = buscar_resultado(identificacion, programa)
     # LADRILLO condicional: si no existe, mensaje amable (no se cae la app).
@@ -199,6 +301,7 @@ def estudiante(identificacion, programa):
 
 # LADRILLO función: emite el certificado solo si la regla lo permite.
 @app.route("/certificado/<identificacion>/<path:programa>")
+@requiere_login
 def certificado(identificacion, programa):
     resultado = buscar_resultado(identificacion, programa)
     if resultado is None:
@@ -229,6 +332,8 @@ def certificado(identificacion, programa):
 
 # LADRILLO función: junta TODOS los certificados en una sola página imprimible.
 @app.route("/certificados")
+@requiere_login
+@solo_admin
 def certificados():
     resultados, *_ = calcular_resultados()
     # LADRILLO bucle + condicional: solo quien tiene certificado entra al lote.

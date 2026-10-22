@@ -13,6 +13,18 @@ body {
 .cabecera a { text-decoration: none; }
 .cabecera h1 { margin: 0; color: #d4af37; font-size: 28px; letter-spacing: 1px; }
 .cabecera p { color: #fff; margin: 4px 0 0; }
+.sesion {
+  margin-top: 10px; display: flex; gap: 10px; align-items: center;
+  justify-content: center; flex-wrap: wrap; color: #fff; font-size: 13px;
+}
+.sesion .rol {
+  background: #d4af37; color: #0f2a4a; border-radius: 12px; padding: 3px 10px;
+  font-weight: bold; font-size: 11px; letter-spacing: .5px; text-transform: uppercase;
+}
+/* LADRILLO: insignia según el rol (dorado admin, azul usuario). */
+.sesion .rol-admin { background: #d4af37; color: #0f2a4a; }
+.sesion .rol-usuario { background: #1565c0; color: #fff; }
+.sesion .boton.pequeno { padding: 5px 12px; }
 
 main { padding-bottom: 20px; }
 
@@ -140,12 +152,44 @@ td { border-bottom: 1px solid #ddd; padding: 8px; text-align: center; }
 .lote .certificado { page-break-after: always; break-after: page; }
 .lote .certificado:last-child { page-break-after: auto; break-after: auto; }
 
+/* Pantalla de entrada (login) */
+.entrada {
+  width: 92%; max-width: 420px; margin: 40px auto; padding: 28px 30px;
+  background: #fff; border: 2px solid #d4af37; border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(15, 42, 74, .15);
+}
+.entrada h2 { margin: 0 0 4px; color: #0f2a4a; text-align: center; }
+.entrada .ayuda { margin: 0 0 18px; text-align: center; color: #555; font-size: 14px; }
+.entrada label {
+  display: block; margin: 12px 0 4px; font-size: 13px;
+  font-weight: bold; color: #0f2a4a;
+}
+.entrada input {
+  width: 100%; padding: 10px 12px; font-size: 15px;
+  border: 2px solid #c9d2dc; border-radius: 8px; background: #fff;
+}
+.entrada input:focus { outline: none; border-color: #d4af37; }
+.entrada .boton.ancho { width: 100%; margin-top: 18px; text-align: center; }
+.error {
+  margin: 0 0 8px; padding: 10px 12px; font-size: 14px;
+  background: #fdecea; color: #b71c1c;
+  border-left: 5px solid #c62828; border-radius: 4px;
+}
+.aviso-demo {
+  margin-bottom: 14px; padding: 10px 14px; font-size: 13px;
+  background: #fff8e1; border: 1px dashed #b8912b;
+  border-radius: 8px; color: #5a4600;
+}
+.aviso-demo p { margin: 4px 0; }
+.aviso-demo ul { margin: 6px 0 0 18px; padding: 0; }
+
 /* Mensaje amable */
 .mensaje {
   width: 90%; max-width: 640px; margin: 40px auto; padding: 24px 28px;
   background: #fff; border: 2px solid #d4af37; border-radius: 12px; text-align: center;
 }
 .mensaje h2 { margin-top: 0; color: #0f2a4a; }
+.mensaje .botones { justify-content: center; margin-top: 18px; }
 
 /* LADRILLO: impresión en hoja horizontal, sin cabecera ni botones. */
 @page { size: A4 landscape; margin: 8mm; }

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titulo %}Entrar — Academia Horizonte{% endblock %}
+
+{% block contenido %}
+  <!-- LADRILLO: caja centrada con el formulario de entrada. -->
+  <section class="entrada">
+    <h2>Entrar</h2>
+    <p class="ayuda">Ingresa con tu correo y contraseña para ver los certificados.</p>
+
+    <!-- LADRILLO condicional: aviso cuando faltan las variables de entorno. -->
+    {% if modo_demo %}
+      <div class="aviso-demo">
+        <strong>Modo demostración</strong>
+        <p>No se encontraron las variables de entorno de los usuarios, así que la app está usando datos de prueba.</p>
+        <ul>
+          {% for u in demo_visibles %}
+            <li>{{ u.correo }} / {{ u.clave }} (rol {{ u.rol }})</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <!-- LADRILLO condicional: mensaje rojo si las credenciales no coinciden. -->
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('login') }}">
+      <label for="correo">Correo</label>
+      <input id="correo" type="email" name="correo" value="{{ correo }}"
+             autocomplete="username" required autofocus>
+
+      <label for="clave">Contraseña</label>
+      <input id="clave" type="password" name="clave"
+             autocomplete="current-password" required>
+
+      <button class="boton dorado ancho" type="submit">Entrar</button>
+    </form>
+  </section>
+{% endblock %}
