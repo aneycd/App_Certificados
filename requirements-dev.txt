@@ -1,0 +1,4 @@
+# requirements-dev.txt — librerías solo para desarrollo y pruebas.
+# Instalar con: pip install -r requirements-dev.txt
+-r requirements.txt
+pytest==9.1.1

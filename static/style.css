@@ -83,6 +83,37 @@ td { border-bottom: 1px solid #ddd; padding: 8px; text-align: center; }
 .inconsistencias h2 { color: #0f2a4a; margin-top: 4px; }
 .inconsistencias h3 { font-size: 15px; margin-bottom: 4px; }
 
+/* Panel de administración y avisos de carga */
+.panel-admin {
+  width: 95%; max-width: 1000px; margin: 16px auto; padding: 18px 22px;
+  background: #fff; border: 2px solid #d4af37; border-radius: 12px;
+}
+.panel-admin h2 { margin: 0 0 6px; color: #0f2a4a; font-size: 20px; }
+.panel-admin .origen { margin: 0 0 14px; font-size: 13px; color: #555; }
+.panel-admin .origen strong { color: #0f2a4a; }
+.panel-admin .campos {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.panel-admin label { font-size: 13px; font-weight: bold; color: #0f2a4a; }
+.panel-admin input[type="file"] {
+  display: block; width: 100%; margin-top: 6px; padding: 8px;
+  border: 2px dashed #c9d2dc; border-radius: 8px; background: #fbfaf6;
+  font-size: 13px;
+}
+.panel-admin .botones { margin-top: 14px; }
+.panel-admin .descarga-fabrica { margin: 14px 0 0; }
+.aviso-error {
+  width: 95%; max-width: 1000px; margin: 16px auto 0; padding: 12px 16px;
+  background: #fdecea; color: #b71c1c; border-left: 6px solid #c62828;
+  border-radius: 6px; font-weight: bold;
+}
+.aviso-subida {
+  width: 95%; max-width: 1000px; margin: 16px auto 0; padding: 12px 16px;
+  background: #e8f5e9; color: #1b5e20; border-left: 6px solid #2e7d32;
+  border-radius: 6px; font-size: 14px;
+}
+
 /* Ficha del estudiante */
 .ficha {
   width: 90%; max-width: 820px; margin: 20px auto; padding: 24px 28px;

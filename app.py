@@ -6,13 +6,16 @@ from collections import defaultdict  # LADRILLO: caja para agrupar por clave
 from datetime import date  # LADRILLO: fecha de emisión del certificado
 from functools import wraps  # LADRILLO: conservar el nombre de la función decorada
 import hmac  # LADRILLO: comparar contraseñas de forma segura
+from io import BytesIO  # LADRILLO: "caja" en memoria para leer archivos sin disco
 import os  # LADRILLO: leer variables de entorno (nunca claves en el código)
 from pathlib import Path  # LADRILLO: rutas que funcionan desde cualquier carpeta
 from dotenv import load_dotenv  # LADRILLO: leer el archivo .env en tu máquina
 from flask import (  # LADRILLO: Flask = servidor web
-    Flask, redirect, render_template, request, session, url_for,
+    Flask, redirect, render_template, request, send_file, session, url_for,
 )
-from openpyxl import load_workbook  # LADRILLO: librería para leer Excel .xlsx
+from openpyxl import Workbook, load_workbook  # LADRILLO: leer y escribir Excel
+from openpyxl.styles import Font, PatternFill  # LADRILLO: colores del Excel
+from openpyxl.utils import get_column_letter  # LADRILLO: nombre de columna (A, B…)
 
 # LADRILLO variable: creamos la aplicación web.
 app = Flask(__name__)
@@ -28,6 +31,18 @@ load_dotenv(BASE_DIR / ".env")
 # LADRILLO variable: clave para firmar la cookie de sesión.
 # En producción debe venir de una variable de entorno (SECRET_KEY).
 app.secret_key = os.environ.get("SECRET_KEY", "clave-solo-para-demostracion")
+
+# LADRILLO: Vercel rechaza peticiones de más de 4.5 MB; Flask corta antes.
+app.config["MAX_CONTENT_LENGTH"] = int(4.5 * 1024 * 1024)
+
+# LADRILLO constante: tamaño máximo por archivo (4 MB) para avisar con claridad.
+LIMITE_ARCHIVO = 4 * 1024 * 1024
+
+# LADRILLO constante: texto que identifica los datos que vienen con la app.
+ORIGEN_FABRICA = "Datos de fábrica (INSUMOS)"
+
+# LADRILLO constante: tipo de archivo que el navegador reconoce como Excel.
+MIMITE_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 # LADRILLO variable tipo dict: sigla de cada programa para armar el folio.
@@ -141,9 +156,12 @@ def codigo_certificado(cohorte, programa, identificacion):
     return f"AH-{cohorte_texto}-{sigla}-{identificacion}"
 
 
-def cargar_maestro(ruta):
-    """Lee el Excel oficial. Devuelve dict con clave (identificacion, programa)."""
-    wb = load_workbook(ruta, data_only=True, read_only=True)
+def cargar_maestro(origen=RUTA_MAESTRO):
+    """Lee el Excel del maestro desde una ruta o desde memoria (BytesIO)."""
+    # LADRILLO: BytesIO es como una caja de archivo dentro de la memoria RAM.
+    # El archivo se mete en la caja y se lee igual que uno del disco,
+    # pero al terminar la petición la caja se bota: nunca se guarda nada.
+    wb = load_workbook(origen, data_only=True, read_only=True)
     ws = wb["Estudiantes"]
     maestro = {}
     # LADRILLO bucle: recorre cada fila del Excel (salta el encabezado).
@@ -155,9 +173,9 @@ def cargar_maestro(ruta):
     return maestro
 
 
-def cargar_evaluaciones(ruta):
-    """Lee notas. Devuelve notas y asistencias agrupadas por (id, programa)."""
-    wb = load_workbook(ruta, data_only=True, read_only=True)
+def cargar_evaluaciones(origen=RUTA_EVAL):
+    """Lee notas desde una ruta o desde memoria (BytesIO)."""
+    wb = load_workbook(origen, data_only=True, read_only=True)
     ws = wb["Evaluaciones"]
     notas = defaultdict(list)
     asist = defaultdict(list)
@@ -170,10 +188,11 @@ def cargar_evaluaciones(ruta):
     return notas, asist
 
 
-def calcular_resultados():
+# LADRILLO función: acepta archivos opcionales; sin ellos lee los INSUMOS de fábrica.
+def calcular_resultados(origen_maestro=RUTA_MAESTRO, origen_eval=RUTA_EVAL):
     """Cruza maestro + evaluaciones y prepara todo para la página."""
-    maestro = cargar_maestro(RUTA_MAESTRO)
-    notas, asist = cargar_evaluaciones(RUTA_EVAL)
+    maestro = cargar_maestro(origen_maestro)
+    notas, asist = cargar_evaluaciones(origen_eval)
 
     resultados = []
     # LADRILLO bucle: solo los del maestro generan certificado (el huérfano no).
@@ -264,22 +283,156 @@ def salir():
     return redirect(url_for("login"))
 
 
+# LADRILLO función: arma las variables que espera index.html.
+def construir_contexto(datos, origen, mensaje_subida=False, error=None):
+    resultados, n_aprob, n_part, n_sin, sin_eval, huerfanos, con_ceros, programas = datos
+    return {
+        "resultados": resultados,
+        "n_aprob": n_aprob, "n_part": n_part, "n_sin": n_sin,
+        "n_certificados": n_aprob + n_part,
+        "sin_eval": sin_eval, "huerfanos": huerfanos, "con_ceros": con_ceros,
+        "programas": programas, "filtro": "Todos",
+        "origen": origen, "mensaje_subida": mensaje_subida, "error": error,
+    }
+
+
+# LADRILLO función: vuelve al tablero con datos de fábrica y un aviso rojo.
+def tablero_con_error(mensaje, estado=400):
+    contexto = construir_contexto(calcular_resultados(), ORIGEN_FABRICA, error=mensaje)
+    return render_template("index.html", **contexto), estado
+
+
+# LADRILLO función: arma un Excel de resultados en memoria (sin tocar el disco).
+def crear_excel_resultados(resultados):
+    libro = Workbook()
+    hoja = libro.active
+    hoja.title = "Resultados"
+    hoja.append([
+        "Identificación", "Nombre", "Programa", "Cohorte", "Módulos",
+        "Promedio", "Asistencia", "Certificado", "Folio",
+    ])
+    # LADRILLO bucle: una fila por estudiante ya calculado.
+    for r in resultados:
+        hoja.append([
+            r["id"], r["nombre"], r["programa"], r["cohorte"], r["modulos"],
+            r["promedio"], r["asistencia"], r["tipo"], r["folio"],
+        ])
+
+    # LADRILLO: encabezado azul marino con letras doradas.
+    relleno = PatternFill("solid", fgColor="0F2A4A")
+    for celda in hoja[1]:
+        celda.font = Font(bold=True, color="D4AF37")
+        celda.fill = relleno
+
+    # LADRILLO bucle: ancho cómodo para cada columna.
+    for indice, ancho in enumerate([16, 28, 30, 12, 10, 10, 12, 18, 30], start=1):
+        hoja.column_dimensions[get_column_letter(indice)].width = ancho
+    hoja.freeze_panes = "A2"
+
+    buffer = BytesIO()  # LADRILLO: caja en memoria, nunca un archivo en disco
+    libro.save(buffer)
+    buffer.seek(0)  # LADRILLO: rebobinar para que se lea desde el principio
+    return buffer
+
+
+# LADRILLO función: revisa nombre, extensión y peso de un archivo subido.
+def validar_archivo(archivo, etiqueta):
+    if archivo is None or not archivo.filename:
+        return None, f"Falta el archivo: {etiqueta}."
+    if not archivo.filename.lower().endswith(".xlsx"):
+        return None, f"{etiqueta} debe ser un archivo Excel .xlsx."
+    contenido = archivo.read()
+    if len(contenido) > LIMITE_ARCHIVO:
+        return None, (f"{etiqueta} pesa más de 4 MB. "
+                      "Reduce el archivo e inténtalo de nuevo.")
+    return contenido, None
+
+
 # LADRILLO función con decorador: atiende la página principal.
 @app.route("/")
 @requiere_login
 def index():
-    resultados, n_aprob, n_part, n_sin, sin_eval, huerfanos, con_ceros, programas = \
-        calcular_resultados()
+    contexto = construir_contexto(calcular_resultados(), ORIGEN_FABRICA)
     # Filtro por programa (?programa=...). La página no decide, solo filtra vista.
     filtro = request.args.get("programa", "Todos")
     if filtro != "Todos":  # LADRILLO condicional
-        resultados = [r for r in resultados if r["programa"] == filtro]
-    return render_template(
-        "index.html", resultados=resultados,
-        n_aprob=n_aprob, n_part=n_part, n_sin=n_sin,
-        n_certificados=n_aprob + n_part,
-        sin_eval=sin_eval, huerfanos=huerfanos, con_ceros=con_ceros,
-        programas=programas, filtro=filtro,
+        contexto["resultados"] = [
+            r for r in contexto["resultados"] if r["programa"] == filtro
+        ]
+    contexto["filtro"] = filtro
+    return render_template("index.html", **contexto)
+
+
+# LADRILLO función: procesa los dos Excel subidos, en memoria y sin guardarlos.
+@app.route("/cargar", methods=["GET", "POST"])
+@requiere_login
+@solo_admin
+def cargar():
+    # LADRILLO condicional: un GET (sin archivos) vuelve al tablero con el panel.
+    if request.method == "GET":
+        return redirect(url_for("index"))
+
+    accion = request.form.get("accion", "pantalla")
+
+    # LADRILLO: validamos los dos archivos antes de intentar leerlos.
+    bytes_maestro, error = validar_archivo(
+        request.files.get("maestro"), "Maestro de estudiantes")
+    if error is None:
+        bytes_eval, error = validar_archivo(
+            request.files.get("evaluaciones"), "Registro de evaluaciones")
+    if error:
+        return tablero_con_error(error)
+
+    # LADRILLO: BytesIO envuelve los bytes para que openpyxl los lea como archivo.
+    try:
+        datos = calcular_resultados(BytesIO(bytes_maestro), BytesIO(bytes_eval))
+    except Exception:  # LADRILLO: cualquier Excel roto cae en un aviso entendible
+        return tablero_con_error(
+            "No pudimos leer los archivos. Revisa que sean Excel .xlsx "
+            "con las hojas 'Estudiantes' y 'Evaluaciones'."
+        )
+
+    # LADRILLO condicional: el botón de descarga devuelve el Excel en memoria.
+    if accion == "excel":
+        return send_file(
+            crear_excel_resultados(datos[0]),
+            as_attachment=True,
+            download_name="resultados_subidos.xlsx",
+            mimetype=MIMITE_EXCEL,
+        )
+
+    # LADRILLO: mostramos los resultados subidos solo en esta respuesta.
+    nombres = (request.files["maestro"].filename,
+               request.files["evaluaciones"].filename)
+    contexto = construir_contexto(
+        datos,
+        f"Archivos subidos: {nombres[0]} y {nombres[1]}",
+        mensaje_subida=True,
+    )
+    return render_template("index.html", **contexto)
+
+
+# LADRILLO función: descarga los resultados de los datos de fábrica.
+@app.route("/resultados.xlsx")
+@requiere_login
+@solo_admin
+def resultados_excel():
+    resultados, *_ = calcular_resultados()
+    return send_file(
+        crear_excel_resultados(resultados),
+        as_attachment=True,
+        download_name="resultados_academia_horizonte.xlsx",
+        mimetype=MIMITE_EXCEL,
+    )
+
+
+# LADRILLO: si la carga supera el límite de Flask/Vercel, avisamos sin página en blanco.
+@app.errorhandler(413)
+def demasiado_grande(_error):
+    return tablero_con_error(
+        "La carga supera el límite de 4.5 MB permitido. "
+        "Reduce el tamaño de los archivos e inténtalo otra vez.",
+        estado=413,
     )
 
 

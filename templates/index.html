@@ -2,6 +2,54 @@
 {% block titulo %}Academia Horizonte — Certificados{% endblock %}
 
 {% block contenido %}
+  <!-- Aviso rojo: error al subir o leer los archivos. -->
+  {% if error %}
+    <div class="aviso-error">{{ error }}</div>
+  {% endif %}
+
+  <!-- Aviso verde: los resultados subidos viven solo en esta pantalla. -->
+  {% if mensaje_subida %}
+    <div class="aviso-subida">
+      <strong>Estás viendo resultados de archivos subidos.</strong>
+      Viven solo en esta pantalla: no se guardaron en ningún lado.
+      Al recargar la app se vuelven a mostrar los datos de fábrica.
+    </div>
+  {% endif %}
+
+  <!-- Panel de administración: solo el rol admin puede subir los dos Excel. -->
+  {% if session.get('rol') == 'admin' %}
+  <section class="panel-admin">
+    <h2>Panel de administración</h2>
+    <p class="origen">Datos en pantalla: <strong>{{ origen }}</strong></p>
+
+    <form method="post" action="{{ url_for('cargar') }}" enctype="multipart/form-data">
+      <div class="campos">
+        <label for="maestro">Maestro de estudiantes (.xlsx)
+          <input id="maestro" type="file" name="maestro" accept=".xlsx" required>
+        </label>
+        <label for="evaluaciones">Registro de evaluaciones (.xlsx)
+          <input id="evaluaciones" type="file" name="evaluaciones" accept=".xlsx" required>
+        </label>
+      </div>
+
+      <div class="botones">
+        <button class="boton dorado" type="submit" name="accion" value="pantalla">
+          Procesar y ver en pantalla
+        </button>
+        <button class="boton" type="submit" name="accion" value="excel">
+          Procesar y descargar Excel
+        </button>
+      </div>
+    </form>
+
+    <p class="descarga-fabrica">
+      <a class="boton pequeno" href="{{ url_for('resultados_excel') }}">
+        Descargar resultados de los datos de fábrica (.xlsx)
+      </a>
+    </p>
+  </section>
+  {% endif %}
+
   <!-- Contadores arriba -->
   <section class="contadores">
     <div class="caja verde"><strong>{{ n_aprob }}</strong><span>Aprobación</span></div>
